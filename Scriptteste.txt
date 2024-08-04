@@ -1,0 +1,117 @@
+-- Abaixo estará a UI 
+
+local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/7yhx/kwargs_Ui_Library/main/source.lua"))()
+
+local UI = Lib:Create{
+   Theme = "Dark", -- or any other theme
+   Size = UDim2.new(0, 555, 0, 400) -- default
+}
+
+local Main = UI:Tab{
+   Name = "Main"
+}
+
+local Divider = Main:Divider{
+   Name = "Main shit"
+}
+
+local QuitDivider = Main:Divider{
+   Name = "Quit"
+}
+
+-- Script Lua para Arsenal no Roblox com funcionalidades solicitadas
+
+-- Referências aos serviços necessários
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Teams = game:GetService("Teams")
+local RunService = game:GetService("RunService")
+
+-- Variáveis para controle do script
+local isActive = true
+
+-- Função para criar e atualizar os ESPs dos jogadores
+local function createESP(player)
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local espPart = Instance.new("BillboardGui")
+    espPart.Parent = PlayerGui
+    espPart.Adornee = player.Character.HumanoidRootPart
+    espPart.Size = UDim2.new(0, 200, 0, 50)
+    espPart.StudsOffset = Vector3.new(0, 3, 0)
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = espPart
+    textLabel.BackgroundTransparency = 1
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.Text = player.Name
+    textLabel.TextScaled = true
+
+    -- Definindo a cor com base no time
+    if player.Team == LocalPlayer.Team then
+        textLabel.TextColor3 = Color3.fromRGB(0, 0, 255) -- Azul para a equipe amiga
+    else
+        textLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Vermelho para inimigos
+    end
+end
+
+-- Função para atualizar todos os ESPs
+local function updateESPs()
+    for _, player in ipairs(Players:GetPlayers()) do
+        createESP(player)
+    end
+end
+
+-- Função para criar um botão para ativar/desativar o script
+local function createToggleButton()
+    local screenGui = Instance.new("ScreenGui", PlayerGui)
+    local toggleButton = Instance.new("TextButton", screenGui)
+
+    toggleButton.Size = UDim2.new(0, 200, 0, 50)
+    toggleButton.Position = UDim2.new(0, 0, 0, 50)
+    toggleButton.Text = "Desativar ESP"
+    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    
+    toggleButton.MouseButton1Click:Connect(function()
+        isActive = not isActive
+        toggleButton.Text = isActive and "Desativar ESP" or "Ativar ESP"
+        
+        -- Atualizar visibilidade dos ESPs
+        for _, gui in ipairs(PlayerGui:GetChildren()) do
+            if gui:IsA("BillboardGui") then
+                gui.Enabled = isActive
+            end
+        end
+    end)
+end
+
+-- Adiciona os ESPs aos jogadores e atualiza-os quando há alterações
+Players.PlayerAdded:Connect(function(player)
+    if isActive then
+        createESP(player)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    local esp = PlayerGui:FindFirstChild(player.Name .. "ESP")
+    if esp then
+        esp:Destroy()
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if isActive then
+        updateESPs()
+    end
+end)
+
+-- Cria o botão de ativação/desativação
+createToggleButton()
+
+-- Atualiza os ESPs para jogadores existentes
+updateESPs()
+
