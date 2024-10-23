@@ -1,117 +1,108 @@
--- Abaixo estará a UI 
 
-local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/7yhx/kwargs_Ui_Library/main/source.lua"))()
+-- Carregar biblioteca Orion
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
-local UI = Lib:Create{
-   Theme = "Dark", -- or any other theme
-   Size = UDim2.new(0, 555, 0, 400) -- default
-}
+-- Função principal
+local function main()
+    -- Criar janela principal
+    local UI = OrionLib:MakeWindow({
+        Name = "Auto Candy MM2",
+        Size = UDim2.new(0, 200, 0, 300),
+        Position = UDim2.new(0.5, -100, 0.5, -150),
+        HidePremium = true
+    })
 
-local Main = UI:Tab{
-   Name = "Main"
-}
+    -- Criar guia Farm
+    local FarmTab = UI:AddTab("Farm")
 
-local Divider = Main:Divider{
-   Name = "Main shit"
-}
+    -- Criar seção Configurações
+    local FarmSection = FarmTab:AddSection("Configurações")
 
-local QuitDivider = Main:Divider{
-   Name = "Quit"
-}
+    -- Adicionar rótulo
+    FarmSection:AddLabel("Configurações de Farm")
 
--- Script Lua para Arsenal no Roblox com funcionalidades solicitadas
+    -- Variáveis
+    local velocidadeFarm = 0.1
+    local farmAtivo = false
+    local contagemCandies = 0
 
--- Referências aos serviços necessários
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local Teams = game:GetService("Teams")
-local RunService = game:GetService("RunService")
-
--- Variáveis para controle do script
-local isActive = true
-
--- Função para criar e atualizar os ESPs dos jogadores
-local function createESP(player)
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
-    
-    local espPart = Instance.new("BillboardGui")
-    espPart.Parent = PlayerGui
-    espPart.Adornee = player.Character.HumanoidRootPart
-    espPart.Size = UDim2.new(0, 200, 0, 50)
-    espPart.StudsOffset = Vector3.new(0, 3, 0)
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Parent = espPart
-    textLabel.BackgroundTransparency = 1
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.Text = player.Name
-    textLabel.TextScaled = true
-
-    -- Definindo a cor com base no time
-    if player.Team == LocalPlayer.Team then
-        textLabel.TextColor3 = Color3.fromRGB(0, 0, 255) -- Azul para a equipe amiga
-    else
-        textLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Vermelho para inimigos
-    end
-end
-
--- Função para atualizar todos os ESPs
-local function updateESPs()
-    for _, player in ipairs(Players:GetPlayers()) do
-        createESP(player)
-    end
-end
-
--- Função para criar um botão para ativar/desativar o script
-local function createToggleButton()
-    local screenGui = Instance.new("ScreenGui", PlayerGui)
-    local toggleButton = Instance.new("TextButton", screenGui)
-
-    toggleButton.Size = UDim2.new(0, 200, 0, 50)
-    toggleButton.Position = UDim2.new(0, 0, 0, 50)
-    toggleButton.Text = "Desativar ESP"
-    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    
-    toggleButton.MouseButton1Click:Connect(function()
-        isActive = not isActive
-        toggleButton.Text = isActive and "Desativar ESP" or "Ativar ESP"
-        
-        -- Atualizar visibilidade dos ESPs
-        for _, gui in ipairs(PlayerGui:GetChildren()) do
-            if gui:IsA("BillboardGui") then
-                gui.Enabled = isActive
+    -- Adicionar botão Iniciar Farm
+    FarmSection:AddButton({
+        Name = "Iniciar Farm",
+        Callback = function()
+            farmAtivo = true
+            contagemCandies = 0
+            OrionLib:MakeNotification({
+                Name = "Farm Iniciado!",
+                Content = "O farm automático foi iniciado.",
+                Image = "rbxassetid://4483345998",
+                Time = 5
+            })
+            while farmAtivo do
+                local candy = game.Workspace:FindFirstChild("Candy")
+                if candy then
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = candy.CFrame
+                    wait(0.5)
+                    fireproximityprompt(candy.ProximityPrompt)
+                    contagemCandies = contagemCandies + 1
+                    if contagemCandies >= 40 then
+                        game.Players.LocalPlayer.Character:Reset()
+                        contagemCandies = 0
+                    end
+                end
+                wait(velocidadeFarm)
             end
         end
-    end)
+    })
+
+    -- Adicionar botão Parar Farm
+    FarmSection:AddButton({
+        Name = "Parar Farm",
+        Callback = function()
+            farmAtivo = false
+            OrionLib:MakeNotification({
+                Name = "Farm Parado!",
+                Content = "O farm automático foi parado.",
+                Image = "rbxassetid://4483345998",
+                Time = 5
+            })
+        end
+    })
+
+    -- Adicionar slider Velocidade do Farm
+    local slider = FarmSection:AddSlider({
+        Name = "Velocidade do Farm",
+        Min = 0.1,
+        Max = 10,
+        Default = 0.1,
+        Color = Color3.new(1, 0, 0),
+        Callback = function(value)
+            velocidadeFarm = value
+            OrionLib:MakeNotification({
+                Name = "Velocidade Alterada!",
+                Content = "A velocidade do farm foi alterada para " .. tostring(value),
+                Image = "rbxassetid://4483345998",
+                Time = 5
+            })
+        end
+    })
+
+    -- Definir valor inicial do slider
+    slider:Set(2)
+
+    -- Adicionar seletor de cor
+    local cor = FarmSection:AddColorpicker({
+        Name = "Cor do Texto",
+        Default = Color3.fromRGB(255, 255, 255),
+        Callback = function(value)
+            print("Cor selecionada: " .. tostring(value))
+        end
+    })
+
+    -- Definir cor inicial do seletor
+    cor:Set(Color3.fromRGB(255, 255, 255))
 end
 
--- Adiciona os ESPs aos jogadores e atualiza-os quando há alterações
-Players.PlayerAdded:Connect(function(player)
-    if isActive then
-        createESP(player)
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    local esp = PlayerGui:FindFirstChild(player.Name .. "ESP")
-    if esp then
-        esp:Destroy()
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    if isActive then
-        updateESPs()
-    end
-end)
-
--- Cria o botão de ativação/desativação
-createToggleButton()
-
--- Atualiza os ESPs para jogadores existentes
-updateESPs()
+-- Chamar função principal
+main()
 
